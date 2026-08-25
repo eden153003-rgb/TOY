@@ -610,7 +610,7 @@ function showYearlyBorrowModal(year) {
   let html = monthCounts.map((cnt, idx) => `<div class="list-row"><span><b>${idx+1} 月份</b></span> <b>${cnt} 人次</b></div>`).join('');
   document.getElementById('infoModalTitle').innerHTML = `${year} 年度每月借閱人次 <button class="btn-danger-text" onclick="document.getElementById('infoModal').classList.add('hidden')">關閉</button>`;
   document.getElementById('infoModalBody').innerHTML = html;
-  document.getElementById('infoModal').classList.add('hidden');
+  document.getElementById('infoModal').classList.remove('hidden');
 }
 
 function showOverdueModal() {
@@ -651,7 +651,7 @@ window.exportHistoryExcel = function() {
     "類型": r.itemType==='book'?'繪本':'教具',
     "借閱日期": r.borrowDate,
     "應還日期": r.dueDate,
-    "狀態": r.status==='borrowed'?'借出中':(r.status==='returned'?'已歸還':'其他')
+    "狀態": r.status==='borrowed'?'借出中':(r.status==='returned'?'已歸還':'other')
   }));
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
