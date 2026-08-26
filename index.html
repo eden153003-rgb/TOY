@@ -80,7 +80,7 @@ nav.bottom button.active{color:var(--ink);}
 <body>
 <div class="shell">
 <header class="top">
-  <div class="brand">伊八寶借閱系統 <small>V8.8</small></div>
+  <div class="brand">伊八寶借閱系統 <small>V8.9</small></div>
   <div class="cloud-note" id="syncStatus">🟢 系統就緒</div>
 </header>
 <main>
@@ -237,7 +237,7 @@ let pendingActionType = null;
 let pendingActionData = null; 
 
 async function syncData(action) {
-  const local = localStorage.getItem('toy_station_local_v88');
+  const local = localStorage.getItem('toy_station_local_v89');
   if(local) { try{ state = JSON.parse(local); }catch(err){} }
 
   if(!API_URL) return;
@@ -276,7 +276,7 @@ window.onload = async function() {
 };
 
 function saveDataLocal() {
-  localStorage.setItem('toy_station_local_v88', JSON.stringify(state));
+  localStorage.setItem('toy_station_local_v89', JSON.stringify(state));
 }
 
 function initYearSelect() {
@@ -576,7 +576,7 @@ document.getElementById('btnConfirmRenew').onclick = async function() {
     return x.parentCode === currentRenewParentCode && x.status === 'borrowed';
   });
 
-  const baseDateStr = document.getElementById('renewDateInput'].value || todayISO();
+  const baseDateStr = document.getElementById('renewDateInput').value || todayISO();
   const baseDate = new Date(baseDateStr);
   baseDate.setDate(baseDate.getDate() + 21);
   const newDueDate = baseDate.toISOString().slice(0,10);
@@ -674,13 +674,12 @@ document.getElementById('btnConfirmStaffAction').onclick = async function() {
     codes.forEach(function(code){
       const it = state.items.find(function(x){return x.code === code;});
       if(it) {
-        // 清理掉舊名稱中可能包含的括號文字
         let cleanName = it.name.replace(/\s*\(經辦社工:.*\)/g, '').trim();
         state.logs.push({
           type: 'delete_item',
           code: it.code,
           name: cleanName,
-          staff: staffObj.name, // 確實寫入選取的社工姓名
+          staff: staffObj.name,
           time: new Date().toLocaleString()
         });
       }
@@ -935,7 +934,7 @@ function handleExcel(e, target) {
   reader.onload = async function(ev) {
     const wb = XLSX.read(ev.target.result, {type:'array'});
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
-    if(rows.length < 2) return alert('表格 is空的');
+    if(rows.length < 2) return alert('表格是空的');
     const headerRow = rows[0];
     const isHeaderBook = String(headerRow[0]||'').includes('繪本') || String(headerRow[1]||'').includes('繪本') || String(headerRow[2]||'').includes('繪本');
     let count = 0;
