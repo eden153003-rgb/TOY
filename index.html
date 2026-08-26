@@ -80,7 +80,7 @@ nav.bottom button.active{color:var(--ink);}
 <body>
 <div class="shell">
 <header class="top">
-  <div class="brand">伊八寶借閱系統 <small>V8.0</small></div>
+  <div class="brand">伊八寶借閱系統 <small>V8.1</small></div>
   <div class="cloud-note" id="syncStatus">🟢 系統就緒</div>
 </header>
 <main>
@@ -237,17 +237,13 @@ let pendingActionType = null;
 let pendingActionData = null; 
 
 async function syncData(action) {
-  const local = localStorage.getItem('toy_station_local_v80');
+  const local = localStorage.getItem('toy_station_local_v81');
   if(local) { try{ state = JSON.parse(local); }catch(err){} }
 
   if(!API_URL) return;
   try {
-    document.getElementById('syncStatus').textContent = "📊 雲端同步中...";
     if(action === 'load') {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(API_URL, { signal: controller.signal });
-      clearTimeout(timeoutId);
+      const res = await fetch(API_URL, { cache: 'no-store' });
       const data = await res.json();
       state = {
         parents: data.parents || [],
@@ -259,6 +255,7 @@ async function syncData(action) {
       saveDataLocal();
     } else if (action === 'save') {
       saveDataLocal();
+      // 使用不經過瀏覽器擴充功能攔截的背景 fetch
       fetch(API_URL, { 
         method: 'POST', 
         mode: 'no-cors',
@@ -280,7 +277,7 @@ window.onload = async function() {
 };
 
 function saveDataLocal() {
-  localStorage.setItem('toy_station_local_v80', JSON.stringify(state));
+  localStorage.setItem('toy_station_local_v81', JSON.stringify(state));
 }
 
 function initYearSelect() {
