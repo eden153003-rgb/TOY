@@ -80,8 +80,8 @@ nav.bottom button.active{color:var(--ink);}
 <body>
 <div class="shell">
 <header class="top">
-  <div class="brand">伊八寶借閱系統 <small>V7.8</small></div>
-  <div class="cloud-note" id="syncStatus">📊 試算表連線中...</div>
+  <div class="brand">伊八寶借閱系統 <small>V8.0</small></div>
+  <div class="cloud-note" id="syncStatus">🟢 系統就緒</div>
 </header>
 <main>
   <section class="tab-section active" data-tab="borrow">
@@ -192,7 +192,6 @@ nav.bottom button.active{color:var(--ink);}
 </nav>
 </div>
 
-<!-- 彈出視窗 -->
 <div class="modal-overlay hidden" id="infoModal">
   <div class="modal-sheet">
     <h3 id="infoModalTitle">標題 <button class="btn-danger-text" onclick="document.getElementById('infoModal').classList.add('hidden')">關閉</button></h3>
@@ -200,7 +199,6 @@ nav.bottom button.active{color:var(--ink);}
   </div>
 </div>
 
-<!-- LINE 模板彈出視窗 -->
 <div class="modal-overlay hidden" id="lineModal">
   <div class="modal-sheet">
     <h3>LINE 通知模板 <button class="btn-danger-text" onclick="document.getElementById('lineModal').classList.add('hidden')">關閉</button></h3>
@@ -210,7 +208,6 @@ nav.bottom button.active{color:var(--ink);}
   </div>
 </div>
 
-<!-- 經辦社工選擇彈窗 -->
 <div class="modal-overlay hidden" id="staffActionModal">
   <div class="modal-sheet">
     <h3 id="staffActionTitle">選擇經辦社工 <button class="btn-danger-text" onclick="document.getElementById('staffActionModal').classList.add('hidden')">關閉</button></h3>
@@ -220,7 +217,6 @@ nav.bottom button.active{color:var(--ink);}
   </div>
 </div>
 
-<!-- 續借設定視窗 (顯示原本預計歸還日期供確認) -->
 <div class="modal-overlay hidden" id="renewModal">
   <div class="modal-sheet">
     <h3>🔄 家長整批續借設定 <button class="btn-danger-text" onclick="document.getElementById('renewModal').classList.add('hidden')">關閉</button></h3>
@@ -241,11 +237,17 @@ let pendingActionType = null;
 let pendingActionData = null; 
 
 async function syncData(action) {
+  const local = localStorage.getItem('toy_station_local_v80');
+  if(local) { try{ state = JSON.parse(local); }catch(err){} }
+
   if(!API_URL) return;
   try {
-    document.getElementById('syncStatus').textContent = "📊 試算表同步中...";
+    document.getElementById('syncStatus').textContent = "📊 雲端同步中...";
     if(action === 'load') {
-      const res = await fetch(API_URL);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(API_URL, { signal: controller.signal });
+      clearTimeout(timeoutId);
       const data = await res.json();
       state = {
         parents: data.parents || [],
@@ -254,19 +256,19 @@ async function syncData(action) {
         borrows: data.borrows || [],
         logs: data.logs || []
       };
+      saveDataLocal();
     } else if (action === 'save') {
-      await fetch(API_URL, { 
+      saveDataLocal();
+      fetch(API_URL, { 
         method: 'POST', 
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(state) 
-      });
+      }).catch(err => {});
     }
-    document.getElementById('syncStatus').textContent = "🟢 已同步至 Google 試算表";
+    document.getElementById('syncStatus').textContent = "🟢 系統就緒 (已連線)";
   } catch(e) {
-    const local = localStorage.getItem('toy_station_local_v78');
-    if(local) { try{ state = JSON.parse(local); }catch(err){} }
-    document.getElementById('syncStatus').textContent = "🟢 離線備援模式";
+    document.getElementById('syncStatus').textContent = "🟢 系統就緒 (離線備援模式)";
   }
 }
 
@@ -278,7 +280,7 @@ window.onload = async function() {
 };
 
 function saveDataLocal() {
-  localStorage.setItem('toy_station_local_v78', JSON.stringify(state));
+  localStorage.setItem('toy_station_local_v80', JSON.stringify(state));
 }
 
 function initYearSelect() {
@@ -539,7 +541,6 @@ window.initReturnProcess = function(borrowId, itemCode) {
   showStaffActionModal("選擇歸還經辦社工", "請選擇負責本次歸還作業的社工：");
 }
 
-/* --- 續借時顯示原本預計歸還日期供確認 --- */
 window.openParentRenewModal = function(parentCode) {
   const parentItems = state.borrows.filter(function(x){
     return x.parentCode === parentCode && x.status === 'borrowed';
@@ -552,7 +553,6 @@ window.openParentRenewModal = function(parentCode) {
 
   currentRenewParentCode = parentCode;
   
-  // 組合顯示原本的各項歸還日期
   let datesText = parentItems.map(function(x){ return "• " + x.itemName + " (原本應還: " + x.dueDate + ")"; }).join('\n');
   document.getElementById('renewInfoDesc').innerHTML = "⚠️ 正在為家長「" + parentCode + "」進行整批續借。<br>請確認以下原本的預計歸還日期：<br>" + datesText.replace(/\n/g, '<br>');
   
@@ -567,7 +567,7 @@ document.getElementById('btnConfirmRenew').onclick = async function() {
     return x.parentCode === currentRenewParentCode && x.status === 'borrowed';
   });
 
-  const baseDateStr = document.getElementById('renewDateInput'].value || todayISO();
+  const baseDateStr = document.getElementById('renewDateInput').value || todayISO();
   const baseDate = new Date(baseDateStr);
   baseDate.setDate(baseDate.getDate() + 21);
   const newDueDate = baseDate.toISOString().slice(0,10);
@@ -605,7 +605,7 @@ window.promptDeleteSelectedItems = function() {
 }
 
 function showStaffActionModal(title, desc) {
-  document.getElementById('staffActionTitle').innerHTML = title + " <button class='btn-danger-text' onclick='document.getElementById(\"staffActionModal\").classList.add(\>關閉</button>";
+  document.getElementById('staffActionTitle').innerHTML = title + " <button class='btn-danger-text' onclick='document.getElementById(\"staffActionModal\").classList.add(\"hidden\")'>關閉</button>";
   document.getElementById('staffActionDesc').textContent = desc;
 
   let opts = "";
